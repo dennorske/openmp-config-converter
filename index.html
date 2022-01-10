@@ -206,6 +206,7 @@
             if (wholeLine != null) {
                 value = wholeLine.split(" ")[1];
                 if (value != null) {
+                    value = Number(value);
                     console.log(oldname + " found: ", value);
                     updatedConfig[newname] = value;
                     return;
