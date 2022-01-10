@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+
+<body onload="init()">
+    <h1>Legacy SA-MP configuration converter</h1>
+    <h2>Convert server.cfg to config.json</h2>
+    <a>With the release of open.mp, the standard server configuration format has changed into being in JSON format.<br>
+    This handy converter will help you move existing configurations over to the new standard</a>
+    <a>Upload your server.cfg here. <br><br>It is <b>STRONGLY</b> recommended to remove any passwords, 
+                IP's and sensitive information from the file. This is common sense.
+                <br>The file is only stored in memory, and never saved to disk.
+                <br>Feel free to look at the available source code here.<br>
+                <br>
+                You can drag-n-drop into the "browse". It only accepts server.cfg as filename.</a>
+    <form>
+        <input type="file" , id="serverconfig">
+        <pre id="fileContent"></pre>
+    </form>
+</body>
+
+<script>
+    const inputElement = document.getElementById("serverconfig")
+    inputElement.addEventListener("change", handleFiles, false);
+
+    function handleFiles(event) {
+        const fileList = this.files; /* now you can work with the file list */
+        if (fileList[0].name != "server.cfg") {
+            alert("Sorry, you can only upload server.cfg from SA-MP here. Check the name and try again.");
+            try {
+                inputElement.value = "";
+            } catch (err) {
+                console.log(err)
+            }
+        } else {
+            // opening file can be risky, so lets sanitize it
+            const reader = new FileReader();
+            reader.onload = handleFileLoad;
+            reader.readAsText(event.target.files[0])
+        }
+
+    }
+
+    function handleFileLoad(event) {
+        console.log(event);
+        const config = event.target.result;
+        document.getElementById('fileContent').textContent = config;
+        convert(config);
+    }
+
+    function init() {
+        const inputElement = document.getElementById("serverconfig")
+        inputElement.value = "";
+    }
+
+
+    const defaultConfig = {
+        "allow_interior_weapons": 1,
+        "announce": 1,
+        "cookie_reseed_time": 300000,
+        "death_drop_amount": 0,
+        "disable_interior_enter_exits": 0,
+        "disable_name_tag_los": 0,
+        "enable_query": 1,
+        "enable_rcon": 0,
+        "enable_stunt_bonus": 1,
+        "enable_zone_names": 0,
+        "entry_file": "test.amx",
+        "gravity": 0.008,
+        "in_car_rate": 30,
+        "instagib": 0,
+        "lag_compensation": 1,
+        "lan_mode": 0,
+        "legacy_plugins": [],
+        "limit_global_chat_radius": 200.0,
+        "limit_player_markers": 0,
+        "logging": 1,
+        "logging_chat": 1,
+        "logging_cookies": 0,
+        "logging_queries": 0,
+        "logging_sqlite": 0,
+        "logging_sqlite_queries": 0,
+        "logging_timestamp": 1,
+        "logging_timestamp_format": "[%Y-%m-%dT%H:%M:%SZ]",
+        "manual_vehicle_engine_and_lights": 0,
+        "max_bots": 0,
+        "max_players": 50,
+        "multiplier": 10,
+        "name_tag_draw_distance": 70.0,
+        "network_mtu": 576,
+        "on_foot_rate": 30,
+        "player_markers_draw_distance": 250.0,
+        "player_markers_update_rate": 2500,
+        "player_time_update_rate": 30000,
+        "player_timeout": 10000,
+        "port": 7777,
+        "rcon_allow_teleport": 0,
+        "server_name": "open.mp server",
+        "show_name_tags": 1,
+        "show_player_markers": 1,
+        "side_scripts": [],
+        "sleep": 5,
+        "stream_distance": 200.0,
+        "stream_rate": 1000,
+        "use_limit_global_chat_radius": 0,
+        "use_player_ped_anims": 0,
+        "vehicle_death_respawn_delay": 10,
+        "vehicle_friendly_fire": 0,
+        "weapon_rate": 30,
+        "weather": 10,
+        "website": "open.mp",
+        "world_time": 12
+    }
+
+    function convert(config) {
+        console.log("converting");
+        let lines = config.split(/\r?\n/);
+        let updatedConfig = defaultConfig;
+
+        //Gamemode 
+        let gmFileName = "test.amx";
+        let gmLine = String(lines.filter(res => res.includes("gamemode0")))
+        if (gmLine != null && gmLine.length > 7) {
+            gmLine = gmLine.split(" ")
+            if (gmLine.length > 1) {
+                console.log("Gamemode found: " + gmLine[1])
+                gmFileName = String(gmLine[1]);
+                updatedConfig["entry_file"] = "gamemodes/" + gmFileName + ".amx";
+            }
+        }
+
+        // filterscripts
+        let fsFileNames; //array
+        let fsLine = String(lines.filter(res => res.includes("filterscripts")))
+        if (fsLine != null) {
+            fsLine = fsLine.split(" ")
+            if (fsLine.length > 1) {
+                fsFileNames = fsLine.filter(res => res !== "filterscripts");
+                fsFileNames = fsFileNames.map(res => "filterscrits/" + res + ".amx")
+                updatedConfig["side_scripts"] = fsFileNames;
+            } else {
+                console.log("No filterscripts found, but line was defined..");
+            }
+        } else {
+            console.log("Filterscripts are not defined in file.");
+        }
+
+        //plugins
+        let pluginNames; //array
+        let plLine = String(lines.filter(res => res.includes("plugins")))
+        if (plLine != null) {
+            plLine = plLine.split(" ")
+            if (plLine.length > 1) {
+                pluginNames = plLine.filter(res => res !== "plugins");
+                updatedConfig["legacy_plugins"] = pluginNames;
+            } else {
+                console.log("No plugins found, but line was defined..");
+            }
+        } else {
+            console.log("\"plugins\" is not defined in server.cfg");
+        }
+
+
+
+        convertConfigNumber("port", "port", 7777);
+        convertConfigNumber("maxplayers", "max_players", 100);
+        convertConfigNumber("query", "enable_query", 1);
+        convertConfigNumber("announce", "announce", 1);
+        convertConfigNumber("onfoot_rate", "on_foot_rate", 30);
+        convertConfigNumber("incar_rate", "in_car_rate", 30);
+        convertConfigNumber("weapon_rate", "weapon_rate", 30);
+        convertConfigNumber("stream_distance", "stream_distance", 200.0);
+        convertConfigNumber("stream_rate", "stream_rate", 1000);
+        convertConfigNumber("maxnpc", "max_bots", 0);
+        convertConfigNumber("timestamp", "logging_timestamp", 1);
+        convertConfigNumber("output", "logging", 0);
+        convertConfigNumber("logqueries", "logging_queries", 0);
+        convertConfigNumber("db_logging", "logging_sqlite", 0);
+        convertConfigNumber("db_log_queries", "logging_sqlite_queries", 0);
+        convertConfigNumber("lagcompmode", "lag_compensation", 1);
+        convertConfigNumber("cookielogging", "logging_cookies", 0);
+        convertConfigNumber("connseedtime", "cookie_reseed_time", 300000);
+        convertConfigNumber("mtu", "network_mtu", 576);
+        convertConfigNumber("playertimeout", "player_timeout", 10000);
+        convertConfigNumber("gravity", "gravity", 0.008);
+        convertConfigNumber("worldtime", "world_time", 12);
+        convertConfigNumber("weather", "weather", 10);
+        convertConfigString("bind", "bind", "");
+        convertConfigString("hostname", "server_name", "open.mp server");
+        convertConfigString("weburl", "website", "open.mp");
+        convertConfigString("logtimeformat", "logging_timestamp_format", "[%Y-%m-%dT%H:%M:%SZ]");
+        convertConfigString("gamemodetext", "mode_name", "");
+        convertConfigString("mapname", "map_name", "San Andreas");
+        convertConfigString("language", "language", "");
+        convertConfigString("rcon_password", "password", "");
+
+
+
+
+
+
+
+
+
+        function convertConfigNumber(oldname, newname, defaultvalue) {
+            let wholeLine = String(lines.filter(res => res.includes(oldname + " ")))
+            if (wholeLine != null) {
+                value = wholeLine.split(" ")[1];
+                if (value != null) {
+                    console.log(oldname + " found: ", value);
+                    updatedConfig[newname] = value;
+                    return;
+                }
+            }
+            updatedConfig[newname] = defaultvalue;
+        }
+
+        function convertConfigString(oldname, newname, defaultvalue) {
+            let wholeLine = String(lines.filter(res => res.includes(oldname + " ")))
+            if (wholeLine != null) {
+                value = wholeLine.split(" ").filter(res => res !== oldname);
+                if (value != null) {
+                    if (typeof value != String) {
+                        value = value.join(" ");
+                    }
+                    value = value.replaceAll('"', ""); //sanitizing the values for "
+                    console.log(oldname + " found: ", value);
+                    updatedConfig[newname] = value;
+                    return;
+                }
+            }
+            updatedConfig[newname] = defaultvalue;
+        }
+
+
+
+
+        //the extra config that is not standardized
+
+
+
+        // update the field on website:
+        document.getElementById('fileContent').textContent = JSON.stringify(updatedConfig, undefined, 4);
+    }
+</script>
+
+</html>
