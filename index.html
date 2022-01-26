@@ -64,13 +64,11 @@
         "enable_rcon": 0,
         "enable_stunt_bonus": 1,
         "enable_zone_names": 0,
-        "entry_file": "test.amx",
         "gravity": 0.008,
         "in_car_rate": 30,
         "instagib": 0,
         "lag_compensation": 1,
         "lan_mode": 0,
-        "legacy_plugins": [],
         "limit_global_chat_radius": 200.0,
         "limit_player_markers": 0,
         "logging": 1,
@@ -97,7 +95,11 @@
         "server_name": "open.mp server",
         "show_name_tags": 1,
         "show_player_markers": 1,
-        "side_scripts": [],
+        "pawn": {
+            "entry_file": "test.amx",
+            "legacy_plugins": [],
+            "side_scripts": []
+        },
         "sleep": 5,
         "stream_distance": 200.0,
         "stream_rate": 1000,
@@ -124,7 +126,7 @@
             if (gmLine.length > 1) {
                 console.log("Gamemode found: " + gmLine[1])
                 gmFileName = String(gmLine[1]);
-                updatedConfig["entry_file"] = "gamemodes/" + gmFileName + ".amx";
+                updatedConfig["pawn"]["entry_file"] = "gamemodes/" + gmFileName + ".amx";
             }
         }
 
@@ -136,7 +138,7 @@
             if (fsLine.length > 1) {
                 fsFileNames = fsLine.filter(res => res !== "filterscripts");
                 fsFileNames = fsFileNames.map(res => "filterscrits/" + res + ".amx")
-                updatedConfig["side_scripts"] = fsFileNames;
+                updatedConfig["pawn"]["side_scripts"] = fsFileNames;
             } else {
                 console.log("No filterscripts found, but line was defined..");
             }
@@ -151,7 +153,7 @@
             plLine = plLine.split(" ")
             if (plLine.length > 1) {
                 pluginNames = plLine.filter(res => res !== "plugins");
-                updatedConfig["legacy_plugins"] = pluginNames;
+                updatedConfig["pawn"]["legacy_plugins"] = pluginNames;
             } else {
                 console.log("No plugins found, but line was defined..");
             }
@@ -193,13 +195,7 @@
         convertConfigString("language", "language", "");
         convertConfigString("rcon_password", "password", "");
 
-
-
-
-
-
-
-
+        
 
         function convertConfigNumber(oldname, newname, defaultvalue) {
             let wholeLine = String(lines.filter(res => res.includes(oldname + " ")))
