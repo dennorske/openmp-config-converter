@@ -137,7 +137,7 @@
             fsLine = fsLine.split(" ")
             if (fsLine.length > 1) {
                 fsFileNames = fsLine.filter(res => res !== "filterscripts");
-                fsFileNames = fsFileNames.map(res => "filterscrits/" + res + ".amx")
+                fsFileNames = fsFileNames.map(res => "filterscripts/" + res + ".amx")
                 updatedConfig["pawn"]["side_scripts"] = fsFileNames;
             } else {
                 console.log("No filterscripts found, but line was defined..");
